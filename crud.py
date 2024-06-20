@@ -1,5 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+import random
+import pymongo
+from bson.objectid import ObjectId
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -143,6 +145,77 @@ class Ui_MainWindow(object):
 
         #### My Code starts here #####
         self.close_btn.clicked.connect(self.close_program)
+        self.search_btn.clicked.connect(self.search)
+        self.update_btn.clicked.connect(self.update)
+        self.delete_btn.clicked.connect(self.delete)
+
+
+    def delete(self):
+        myquery = {}
+        if(len(self.first_name_txt.toPlainText()) > 0) :
+            myquery['first name'] = str(self.first_name_txt.toPlainText())
+
+        if(len(self.last_name_txt.toPlainText()) > 0) :
+            myquery['last name'] = str(self.last_name_txt.toPlainText())
+
+        if(len(self.subject_txt.toPlainText()) > 0) :
+            myquery['subject'] = str(self.subject_txt.toPlainText())
+
+        if(len(self.points_txt.toPlainText()) > 0) :
+            myquery['points'] = str(self.points_txt.toPlainText())
+
+        mycol.delete_many(myquery)
+    def update(self):
+        try:
+            object_id = ObjectId(self.id_txt.toPlainText())
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(None, "Error", f"Invalid ObjectId: {e}")
+            return
+
+        myquery = {'_id': object_id}
+        new_val = {
+            "$set": {
+                'first name': self.first_name_txt.toPlainText(),
+                'last name': self.last_name_txt.toPlainText(),
+                'subject': self.subject_txt.toPlainText(),
+                'points': int(self.points_txt.toPlainText())  # Assuming points should be an integer
+            }
+        }
+        
+        mycol.update_one(myquery, new_val)
+        
+
+    def search(self):
+        myquery = {}
+        # x = self.first_name_txt.toPlainText()
+        # if len(self.id_txt.toPlainText()) > 0:
+        #     myquery['id'] = int(self.id_txt.toPlainText())
+
+        if(len(self.first_name_txt.toPlainText()) > 0) :
+            myquery['first name'] = str(self.first_name_txt.toPlainText())
+
+        if(len(self.last_name_txt.toPlainText()) > 0) :
+            myquery['last name'] = str(self.last_name_txt.toPlainText())
+
+        if(len(self.subject_txt.toPlainText()) > 0) :
+            myquery['subject'] = str(self.subject_txt.toPlainText())
+
+        if(len(self.points_txt.toPlainText()) > 0) :
+            myquery['points'] = str(self.points_txt.toPlainText())
+
+        print(myquery)
+
+        x = mycol.find(myquery)
+
+        for i in x:
+            print(i)
+
+
+    def save_all(self, data):
+        for i in data:
+            x = i.split()
+            my_dict = {"last name" : x[0], 'first name' : x[1], 'subject' : x[2], 'points' : x[3]}
+            mycol.insert_one(my_dict)
         
     def close_program(self):
         sys.exit(app.exec_())
@@ -185,9 +258,9 @@ FNames = ['ანა', 'ანუკი', 'ბარბარე', 'გვან
 'ნიკა', 'ოთარი', 'პაატა', 'რამაზ', 'რამინი', 'რატი', 'რაული', 'რევაზი', 'რომა', 'რომანი', 'სანდრო',
 'საბა', 'სერგი', 'სიმონ', 'შალვა', 'შოთა', 'ცოტნე', 'ჯაბა']
 
-Subject = ['პროგრამირების საფუძვლები', 'კალკულუსი II', 'შესავალი ფიზიკაში', 'კომპიუტერული უნარჩვევები',
-'ქიმიის შესავალი', 'ბიოლოგიის შესავალი', 'ალგორითმები I', 'შესავალი ელექტრონიკაში',
-'მონაცემთა სტრუქტურები', 'ალგორითმები II']
+Subject = ['პროგრამირების_საფუძვლები', 'კალკულუსი II', 'შესავალი_ფიზიკაში', 'კომპიუტერული_უნარჩვევები',
+'ქიმიის_შესავალი', 'ბიოლოგიის_შესავალი', 'ალგორითმები_I', 'შესავალი_ელექტრონიკაში',
+'მონაცემთა_სტრუქტურები', 'ალგორითმები_II']
 
 
 if __name__ == "__main__":
@@ -197,4 +270,16 @@ if __name__ == "__main__":
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
     MainWindow.show()
+
+    point = [str(i) for i in range(101)]
+    ch = random.choice
+    stud_recs = [' '.join([ch(LNames), ch(FNames), ch(Subject), ch(point)]) for _ in range(5)]
+    #print(Stud_recs)
+
+    my_client = pymongo.MongoClient('mongodb://localhost:27017/')
+    mydb = my_client["StudentsDB"]
+    mycol = mydb["Students"]
+    
+    ui.save_all_btn.clicked.connect(lambda: ui.save_all(stud_recs))    
+
     sys.exit(app.exec_())
